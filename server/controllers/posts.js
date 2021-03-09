@@ -12,9 +12,13 @@ const getPosts = async (req, res) => {
 };
 
 const createPost = async (req, res) => {
-  const body = req.body;
+  const post = req.body;
   try {
-    const newPost = new PostMessage(body);
+    const newPost = new PostMessage({
+      ...post,
+      creator: req.userId,
+      createdAt: new Date().toISOString(),
+    });
     await newPost.save();
     res.status(201).json(newPost);
   } catch (err) {
@@ -50,20 +54,34 @@ const deletePost = async (req, res) => {
 
 const likePost = async (req, res) => {
   const { id } = req.params;
+
+  // as we have populate it during auth middleware
+  if (!req.userId) {
+    return res.json({ message: 'unauthenticated' });
+  }
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).send('No post with that id');
   }
   //new to true so that we actually receive the updated data
   const post = await PostMessage.findById(id);
-  const updatedPost = await PostMessage.findByIdAndUpdate(
-    id,
-    {
-      likeCount: post.likeCount + 1,
-    },
-    { new: true }
-  );
+
+  // to whether he/she already liked a post
+  const index = post.likes.findIndex((id) => id === String(req.userId));
+
+  // if req.userId not present already
+  if (index === -1) {
+    // like the post
+    post.likes.push(req.userId);
+  } else {
+    // dislike the post
+    post.likes = post.likes.filter((id) => id !== String(req.userId));
+  }
+
+  const updatedPost = await PostMessage.findByIdAndUpdate(id, post, {
+    new: true,
+  });
   // console.log(post);
-  console.log(updatedPost);
+  // console.log(updatedPost);
   res.json(updatedPost);
 };
 

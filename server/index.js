@@ -8,12 +8,14 @@ dotenv.config();
 const app = express();
 
 const postRoutes = require('./routes/posts');
+const userRoutes = require('./routes/users');
 
 app.use(cors()); //use cors middleware
 app.use(bodyParser.json({ limit: '30mb', extended: true })); //to parse json data that our server sending and receiving
 app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }));
 
 app.use('/posts', postRoutes);
+app.use('/user', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('API RUNNING');
@@ -31,6 +33,8 @@ const connection = mongoose.connection;
 connection.once('open', () => {
   console.log('MongoDB database connection establised successfully');
 });
+
+mongoose.set('useFindAndModify', false);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
